@@ -30,5 +30,15 @@ namespace HomeBudgetAPI.Controllers
 
             return Ok(result);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetUserExpenses([FromQuery] int? month, [FromQuery] int? categoryId)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+            var expenses = await _expenseService.GetUserExpenses(userId, month, categoryId);
+
+            return Ok(expenses);
+        }
     }
 }

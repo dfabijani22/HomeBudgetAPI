@@ -1,5 +1,7 @@
 ﻿using HomeBudgetAPI.Data;
+using HomeBudgetAPI.DTOs;
 using HomeBudgetAPI.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace HomeBudgetAPI.Services
 {
@@ -37,6 +39,34 @@ namespace HomeBudgetAPI.Services
 
             return new ExpenseResponse { Success = true, Message = "Trošak uspješno dodan.", ExpenseId = expense.Id };
             
+        }
+
+        public async Task<List<ExpenseDTO>> GetUserExpenses(int userId, int? month = null, int? categoryId = null)
+        {
+            var query = _context.Expenses
+                .Include(e => e.Category)
+                .Where(e => e.UserId == userId);
+
+            if (month.HasValue)
+            {
+                query = query.Where(e => e.Date.Month == month.Value);
+            }
+
+            if (categoryId.HasValue)
+            {
+                query = query.Where(e => e.CategoryId == categoryId.Value);
+            }
+
+            return await query
+                .OrderByDescending(e => e.Date)
+                .Select(e => new ExpenseDTO
+                {
+                    Name = e.Name,
+                    Amount = e.Amount,
+                    Date = e.Date,
+                    CategoryName = e.Category.Name
+                })
+                .ToListAsync();
         }
     }
 }
