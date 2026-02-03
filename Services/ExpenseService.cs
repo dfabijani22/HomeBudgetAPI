@@ -52,21 +52,22 @@ namespace HomeBudgetAPI.Services
                 query = query.Where(e => e.Date.Month == month.Value);
             }
 
-            if (categoryId.HasValue)
+            if (categoryId.HasValue && categoryId.Value != 0)
             {
                 query = query.Where(e => e.CategoryId == categoryId.Value);
             }
+            
 
-            return await query
-                .OrderByDescending(e => e.Date)
-                .Select(e => new ExpenseDTO
-                {
-                    Name = e.Name,
-                    Amount = e.Amount,
-                    Date = e.Date,
-                    CategoryName = e.Category.Name
-                })
-                .ToListAsync();
+                return await query
+                    .OrderByDescending(e => e.Date)
+                    .Select(e => new ExpenseDTO
+                    {
+                        Name = e.Name,
+                        Amount = e.Amount,
+                        Date = e.Date,
+                        CategoryId = e.Category.Id
+                    })
+                    .ToListAsync();
         }
     }
 }
