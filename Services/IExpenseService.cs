@@ -1,0 +1,11 @@
+﻿using HomeBudgetAPI.DTOs;
+using HomeBudgetAPI.Models;
+
+namespace HomeBudgetAPI.Services
+{
+    public interface IExpenseService
+    {
+        Task<ExpenseResponse> AddExpenseAsync(ExpenseRequest request, int UserId);
+        Task<List<ExpenseDTO>> GetUserExpenses(int userId, int? month = null, int? categoryId = null);
+    }
+}
