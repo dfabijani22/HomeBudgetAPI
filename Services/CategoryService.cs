@@ -1,4 +1,5 @@
 ﻿using HomeBudgetAPI.Data;
+using HomeBudgetAPI.DTOs;
 using HomeBudgetAPI.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,6 +33,21 @@ namespace HomeBudgetAPI.Services
 
             return new CategoryResponse { Success = true, Message = "Kategorija uspješno dodana.", CategoryId = category.Id };
 
+        }
+
+        public async Task<List<CategoryDTO>> GetUserCategories(int userId)
+        {
+            var query = _context.Categories
+                .Where(e => e.UserId == userId || e.IsDefault == true);
+
+            return await query
+                .Select(e => new CategoryDTO
+                {
+                    Name = e.Name,
+                    Description= e.Description,
+                    IsDefault = e.IsDefault,
+                })
+                .ToListAsync();
         }
     }
 }

@@ -30,5 +30,14 @@ namespace HomeBudgetAPI.Controllers
 
             return Ok(result);
         }
+        [HttpGet]
+        public async Task<IActionResult> GetUserCategories()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+            var categories = await _categoryService.GetUserCategories(userId);
+
+            return Ok(categories);
+        }
     }
 }
