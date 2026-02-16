@@ -129,5 +129,29 @@ namespace HomeBudgetAPI.Services
             };
 
         }
+        public async Task<ExpenseResponse> DeleteExpenseAsync(int userId, int expenseId)
+        {
+            var expense = await _context.Expenses
+                .FirstOrDefaultAsync(e => e.Id == expenseId && e.UserId == userId);
+
+            if (expense == null)
+            {
+                return new ExpenseResponse
+                {
+                    Success = false,
+                    Message = "Trošak nije pronađen ili ne pripada korisniku."
+                };
+            }
+
+            _context.Expenses.Remove(expense);
+            await _context.SaveChangesAsync();
+
+            return new ExpenseResponse
+            {
+                Success = true,
+                Message = "Trošak je uspješno obrisan.",
+                ExpenseId = expense.Id
+            };
+        }
     }
 }

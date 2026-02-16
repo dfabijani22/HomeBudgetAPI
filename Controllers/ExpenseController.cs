@@ -58,5 +58,19 @@ namespace HomeBudgetAPI.Controllers
             return Ok(result);
 
         }
+
+        [HttpDelete("{expenseId}")]
+        public async Task<IActionResult> DeleteExpense(int expenseId)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+
+            var result = await _expenseService.DeleteExpenseAsync(userId, expenseId);
+
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
     }
 }
