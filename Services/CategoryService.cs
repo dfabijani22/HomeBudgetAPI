@@ -49,5 +49,45 @@ namespace HomeBudgetAPI.Services
                 })
                 .ToListAsync();
         }
+
+        public async Task<CategoryResponse> UpdateCategoryAsync(int userId, int categoryId, CategoryRequest request)
+        {
+            var category = await _context.Categories
+                .FirstOrDefaultAsync(c => c.Id == categoryId && c.UserId == userId);
+
+            if (category == null)
+            {
+                return new CategoryResponse
+                {
+                    Success = false,
+                    Message = "Kategorija nije pronađena ili ne pripada korisniku."
+                };
+            }
+
+            if (category.IsDefault)
+            {
+                return new CategoryResponse
+                {
+                    Success = false,
+                    Message = "Default kategorije nije moguće uređivati."
+                };
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Name))
+                category.Name = request.Name;
+
+            if (!string.IsNullOrWhiteSpace(request.Description))
+                category.Description = request.Description;
+
+            await _context.SaveChangesAsync();
+
+            return new CategoryResponse
+            {
+                Success = true,
+                Message = "Kategorija uspješno ažurirana.",
+                CategoryId = category.Id
+            };
+        }
+
     }
 }

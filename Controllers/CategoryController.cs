@@ -39,5 +39,19 @@ namespace HomeBudgetAPI.Controllers
 
             return Ok(categories);
         }
+
+        [HttpPatch("{categoryId}")]
+        public async Task<IActionResult> UpdateCategory(int categoryId, [FromBody] CategoryRequest request)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+
+            var result = await _categoryService.UpdateCategoryAsync(userId, categoryId, request);
+
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
     }
 }

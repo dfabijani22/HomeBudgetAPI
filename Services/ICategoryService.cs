@@ -7,6 +7,7 @@ namespace HomeBudgetAPI.Services
     {
         Task<CategoryResponse> AddCategoryAsync(CategoryRequest request, int UserId);
         Task<List<CategoryDTO>> GetUserCategories(int userId);
+        Task<CategoryResponse> UpdateCategoryAsync(int userId, int categoryId, CategoryRequest request);
 
     }
 }
