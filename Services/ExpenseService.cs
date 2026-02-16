@@ -69,5 +69,65 @@ namespace HomeBudgetAPI.Services
                     })
                     .ToListAsync();
         }
+        public async Task<ExpenseResponse> UpdateExpenseAsync(int userId, int expenseId, ExpenseRequest request)
+        {
+
+
+            var expense = await _context.Expenses
+                .FirstOrDefaultAsync(e => e.Id == expenseId && e.UserId == userId);
+
+            if (expense == null)
+            {
+                return new ExpenseResponse
+                {
+                    Success = false,
+                    Message = "Trošak nije pronađen ili ne pripada korisniku."
+                };
+            }
+
+            if (request.Amount != default && request.Amount <= 0)
+            {
+                return new ExpenseResponse
+                {
+                    Success = false,
+                    Message = "Iznos mora biti pozitivan broj."
+                };
+            }
+
+            if (request.CategoryId != default)
+            {
+                var category = await _context.Categories.FindAsync(request.CategoryId);
+                if (category == null)
+                {
+                    return new ExpenseResponse
+                    {
+                        Success = false,
+                        Message = "Kategorija nije pronađena."
+                    };
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Name))
+                expense.Name = request.Name;
+
+            if (request.Amount != default)
+                expense.Amount = request.Amount;
+
+            if (request.Date != default)
+                expense.Date = request.Date;
+
+            if (request.CategoryId != default)
+                expense.CategoryId = request.CategoryId;
+
+            await _context.SaveChangesAsync();
+
+            return new ExpenseResponse
+            {
+                Success = true,
+                Message = "Trošak uspješno izmijenjen.",
+                ExpenseId = expense.Id
+            };
+
+        }
     }
 }
