@@ -53,5 +53,20 @@ namespace HomeBudgetAPI.Controllers
             return Ok(result);
         }
 
+
+        [HttpDelete("{categoryId}")]
+        public async Task<IActionResult> DeleteCategory(int categoryId, [FromQuery] int? moveToCategoryId)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+
+            var result = await _categoryService.DeleteCategoryAsync(userId, categoryId, moveToCategoryId);
+
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
+
     }
 }

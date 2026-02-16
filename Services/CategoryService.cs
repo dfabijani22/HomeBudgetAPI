@@ -44,7 +44,7 @@ namespace HomeBudgetAPI.Services
                 .Select(e => new CategoryDTO
                 {
                     Name = e.Name,
-                    Description= e.Description,
+                    Description = e.Description,
                     IsDefault = e.IsDefault,
                 })
                 .ToListAsync();
@@ -85,6 +85,84 @@ namespace HomeBudgetAPI.Services
             {
                 Success = true,
                 Message = "Kategorija uspješno ažurirana.",
+                CategoryId = category.Id
+            };
+        }
+
+        public async Task<CategoryResponse> DeleteCategoryAsync(int userId, int categoryId, int? moveToCategoryId)
+        {
+            var category = await _context.Categories
+                .FirstOrDefaultAsync(c => c.Id == categoryId);
+
+            if (category == null)
+            {
+                return new CategoryResponse { Success = false, Message = "Kategorija ne postoji." };
+            }
+
+            if (category.IsDefault && category.UserId == null)
+            {
+                return new CategoryResponse
+                {
+                    Success = false,
+                    Message = "Globalne default kategorije nije moguće brisati."
+                };
+            }
+
+            if (category.UserId != userId)
+            {
+                return new CategoryResponse
+                {
+                    Success = false,
+                    Message = "Kategorija ne pripada korisniku."
+                };
+            }
+
+            Category targetCategory;
+
+            if (moveToCategoryId.HasValue)
+            {
+                targetCategory = await _context.Categories
+                    .FirstOrDefaultAsync(c => c.Id == moveToCategoryId && (c.UserId == userId || c.UserId == null));
+
+                if (targetCategory == null)
+                {
+                    return new CategoryResponse
+                    {
+                        Success = false,
+                        Message = "Kategorija za prebacivanje troškova ne postoji."
+                    };
+                }
+            }
+            else
+            {
+                targetCategory = await _context.Categories
+                    .FirstOrDefaultAsync(c => c.IsDefault && c.UserId == null);
+
+                if (targetCategory == null)
+                {
+                    return new CategoryResponse
+                    {
+                        Success = false,
+                        Message = "Fallback default kategorija nije pronađena."
+                    };
+                }
+            }
+
+            var expensesToMove = await _context.Expenses
+                .Where(e => e.CategoryId == categoryId && e.UserId == userId)
+                .ToListAsync();
+
+            foreach (var expense in expensesToMove)
+                expense.CategoryId = targetCategory.Id;
+
+            _context.Categories.Remove(category);
+
+            await _context.SaveChangesAsync();
+
+            return new CategoryResponse
+            {
+                Success = true,
+                Message = $"Kategorija obrisana. {expensesToMove.Count} troškova prebačeno u '{targetCategory.Name}'.",
                 CategoryId = category.Id
             };
         }
