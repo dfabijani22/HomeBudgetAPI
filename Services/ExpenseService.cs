@@ -62,6 +62,7 @@ namespace HomeBudgetAPI.Services
                     .OrderByDescending(e => e.Date)
                     .Select(e => new ExpenseDTO
                     {
+                        Id = e.Id,
                         Name = e.Name,
                         Amount = e.Amount,
                         Date = e.Date,
@@ -152,6 +153,25 @@ namespace HomeBudgetAPI.Services
                 Message = "Trošak je uspješno obrisan.",
                 ExpenseId = expense.Id
             };
+        }
+
+        public async Task<ExpenseDTO> GetExpenseByIdAsync(int userId, int expenseId)
+        {
+            var expense = await _context.Expenses
+                .FindAsync(expenseId);
+
+            if (expense == null)
+                return null;
+
+            return new ExpenseDTO
+            {
+                Id = expense.Id,
+                Name = expense.Name,
+                Amount = expense.Amount,
+                CategoryId = expense.CategoryId,
+                Date = expense.Date
+            };
+
         }
     }
 }

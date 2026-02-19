@@ -72,5 +72,15 @@ namespace HomeBudgetAPI.Controllers
             return Ok(result);
         }
 
+        [HttpGet("{expenseId}")]
+        public async Task<IActionResult> GetExpenseById(int expenseId)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+
+            var result = await _expenseService.GetExpenseByIdAsync(userId, expenseId);
+
+            return Ok(result);
+        }
+
     }
 }
