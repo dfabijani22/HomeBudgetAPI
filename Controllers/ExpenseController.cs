@@ -1,4 +1,5 @@
-﻿using HomeBudgetAPI.Data;
+﻿using Azure.Core;
+using HomeBudgetAPI.Data;
 using HomeBudgetAPI.Models;
 using HomeBudgetAPI.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -13,8 +14,10 @@ namespace HomeBudgetAPI.Controllers
     public class ExpenseController : ControllerBase
     {
         private readonly IExpenseService _expenseService;
-        public ExpenseController(IExpenseService expenseService) { 
+        private readonly ApplicationDbContext _context;
+        public ExpenseController(IExpenseService expenseService, ApplicationDbContext context) { 
             _expenseService = expenseService;
+            _context = context;
         }
 
         [HttpPost]
@@ -40,5 +43,44 @@ namespace HomeBudgetAPI.Controllers
 
             return Ok(expenses);
         }
+
+        [HttpPatch("{expenseId}")]
+        public async Task<IActionResult> UpdateExpense(int expenseId, [FromBody]ExpenseRequest request)
+        {
+
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+
+            var result = await _expenseService.UpdateExpenseAsync(userId, expenseId, request);
+
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
+
+        }
+
+        [HttpDelete("{expenseId}")]
+        public async Task<IActionResult> DeleteExpense(int expenseId)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+
+            var result = await _expenseService.DeleteExpenseAsync(userId, expenseId);
+
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
+        [HttpGet("{expenseId}")]
+        public async Task<IActionResult> GetExpenseById(int expenseId)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+
+            var result = await _expenseService.GetExpenseByIdAsync(userId, expenseId);
+
+            return Ok(result);
+        }
+
     }
 }
