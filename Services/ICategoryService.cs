@@ -9,6 +9,7 @@ namespace HomeBudgetAPI.Services
         Task<List<CategoryDTO>> GetUserCategories(int userId);
         Task<CategoryResponse> UpdateCategoryAsync(int userId, int categoryId, CategoryRequest request);
         Task<CategoryResponse> DeleteCategoryAsync(int userId, int categoryId, int? moveToCategoryId);
+        Task<CategoryDTO> GetCategoryByIdAsync(int userId, int categoryId);
 
     }
 }

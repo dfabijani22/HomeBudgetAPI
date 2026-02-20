@@ -67,6 +67,16 @@ namespace HomeBudgetAPI.Controllers
             return Ok(result);
         }
 
+        [HttpGet("{categoryId}")]
+        public async Task<IActionResult> GetCategoryById(int categoryId)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+
+            var result = await _categoryService.GetCategoryByIdAsync(userId, categoryId);
+
+            return Ok(result);
+        }
+
 
     }
 }

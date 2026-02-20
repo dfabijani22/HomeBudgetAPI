@@ -43,6 +43,7 @@ namespace HomeBudgetAPI.Services
             return await query
                 .Select(e => new CategoryDTO
                 {
+                    Id = e.Id,
                     Name = e.Name,
                     Description = e.Description,
                     IsDefault = e.IsDefault,
@@ -52,6 +53,9 @@ namespace HomeBudgetAPI.Services
 
         public async Task<CategoryResponse> UpdateCategoryAsync(int userId, int categoryId, CategoryRequest request)
         {
+            var newName = request.Name?.Trim();
+            var newDescription = request.Description?.Trim();
+
             var category = await _context.Categories
                 .FirstOrDefaultAsync(c => c.Id == categoryId && c.UserId == userId);
 
@@ -73,11 +77,28 @@ namespace HomeBudgetAPI.Services
                 };
             }
 
-            if (!string.IsNullOrWhiteSpace(request.Name))
-                category.Name = request.Name;
+            if (!string.IsNullOrWhiteSpace(request.Name) && !string.Equals(newName, category.Name, StringComparison.Ordinal)){
+
+                var exists = await _context.Categories
+                        .AnyAsync(c =>
+                            c.UserId == userId &&
+                            c.Id != categoryId &&
+                            EF.Functions.Collate(c.Name, "SQL_Latin1_General_CP1_CI_AI") == newName);
+
+                if (exists)
+                {
+                    return new CategoryResponse
+                    {
+                        Success = false,
+                        Message = "Kategorija s ovim nazivom već postoji."
+                    };
+                }
+
+                category.Name = newName;
+            }
 
             if (!string.IsNullOrWhiteSpace(request.Description))
-                category.Description = request.Description;
+                category.Description = newDescription;
 
             await _context.SaveChangesAsync();
 
@@ -165,6 +186,24 @@ namespace HomeBudgetAPI.Services
                 Message = $"Kategorija obrisana. {expensesToMove.Count} troškova prebačeno u '{targetCategory.Name}'.",
                 CategoryId = category.Id
             };
+        }
+
+        public async Task<CategoryDTO> GetCategoryByIdAsync(int userId, int categoryId)
+        {
+            var category = await _context.Categories
+                .FindAsync(categoryId);
+
+            if (category == null)
+                return null;
+
+            return new CategoryDTO
+            {
+                Id = category.Id,
+                Name = category.Name,
+                Description = category.Description,
+                IsDefault = category.IsDefault
+            };
+
         }
 
     }
