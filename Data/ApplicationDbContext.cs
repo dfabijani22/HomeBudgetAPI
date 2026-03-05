@@ -28,8 +28,11 @@ namespace HomeBudgetAPI.Data
             modelBuilder.Entity<Expense>()
                 .Property(e => e.Amount)
                 .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.NormalizedEmail)
+                .IsUnique();
+
         }
     }
-
-    
 }

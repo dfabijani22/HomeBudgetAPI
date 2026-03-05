@@ -1,5 +1,5 @@
 ﻿using HomeBudgetAPI.Data;
-using HomeBudgetAPI.Models;
+using HomeBudgetAPI.DTOs.Auth;
 using HomeBudgetAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -40,13 +40,7 @@ namespace HomeBudgetAPI.Controllers
             if (!result.Success)
                 return Unauthorized(new { result.Message });
 
-            return Ok(new
-            {
-                result.Message,
-                result.Token,
-                result.Success,
-                result.UserId
-            });
+            return Ok(result);
         }
 
     }

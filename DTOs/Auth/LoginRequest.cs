@@ -1,4 +1,4 @@
-﻿namespace HomeBudgetAPI.Models
+﻿namespace HomeBudgetAPI.DTOs.Auth
 {
     public class LoginRequest
     {
