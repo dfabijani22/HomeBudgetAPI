@@ -1,57 +1,63 @@
-﻿using HomeBudgetAPI.Data;
-using HomeBudgetAPI.DTOs;
+﻿using AutoMapper;
+using HomeBudgetAPI.Data;
+using HomeBudgetAPI.DTOs.Category;
+using HomeBudgetAPI.DTOs.Common;
 using HomeBudgetAPI.Models;
 using Microsoft.EntityFrameworkCore;
+using AutoMapper.QueryableExtensions;
 
 namespace HomeBudgetAPI.Services
 {
     public class CategoryService : ICategoryService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMapper _mapper;
+        private const string NameCollation = "SQL_Latin1_General_CP1_CI_AI";
 
-        public CategoryService(ApplicationDbContext context)
+        public CategoryService(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
-        public async Task<CategoryResponse> AddCategoryAsync(CategoryRequest categoryRequest, int userId)
+        public async Task<ApiResponse<CategoryResponse>> AddCategoryAsync(CategoryRequest categoryRequest, int userId)
         {
-            var existingCategory = await _context.Categories.AnyAsync(c => c.UserId == userId && c.Name.ToLower() == categoryRequest.Name.ToLower());
-            if (existingCategory == true)
+            var name = categoryRequest.Name?.Trim();
+            var exists = await _context.Categories.AnyAsync(c => c.UserId == userId && EF.Functions.Collate(c.Name, NameCollation) == name);
+            if (exists)
             {
-                return new CategoryResponse { Success = false, Message = "Postoji kategorija pod tim imenom." };
+                return new ApiResponse<CategoryResponse> { Success = false, Message = "Postoji kategorija pod tim imenom.", Data = null };
             }
 
-            var category = new Category
-            {
-                Name = categoryRequest.Name,
-                Description = categoryRequest.Description,
-                UserId = userId
-            };
+            var category = _mapper.Map<Category>(categoryRequest);
+            category.UserId = userId;
 
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
 
-            return new CategoryResponse { Success = true, Message = "Kategorija uspješno dodana.", CategoryId = category.Id };
+            return new ApiResponse<CategoryResponse> { Success = true, Message = "Kategorija uspješno dodana.", Data = _mapper.Map<CategoryResponse>(category)  };
 
         }
 
-        public async Task<List<CategoryDTO>> GetUserCategories(int userId)
+        public async Task<ApiResponse<List<CategoryResponse>>> GetUserCategories(int userId)
         {
-            var query = _context.Categories
-                .Where(e => e.UserId == userId || e.IsDefault == true);
 
-            return await query
-                .Select(e => new CategoryDTO
-                {
-                    Id = e.Id,
-                    Name = e.Name,
-                    Description = e.Description,
-                    IsDefault = e.IsDefault,
-                })
-                .ToListAsync();
+            var categories = await _context.Categories
+                            .Where(c => c.UserId == userId || c.IsDefault)
+                            .OrderByDescending(c => c.IsDefault)
+                            .ThenBy(c => c.Name)
+                            .ProjectTo<CategoryResponse>(_mapper.ConfigurationProvider)
+                            .ToListAsync();
+
+            return new ApiResponse<List<CategoryResponse>>
+            {
+                Success = true,
+                Message = "Kategorije uspješno dohvačene.",
+                Data = categories
+            };
+
         }
 
-        public async Task<CategoryResponse> UpdateCategoryAsync(int userId, int categoryId, CategoryRequest request)
+        public async Task<ApiResponse<CategoryResponse>> UpdateCategoryAsync(int userId, int categoryId, CategoryRequest request)
         {
             var newName = request.Name?.Trim();
             var newDescription = request.Description?.Trim();
@@ -61,80 +67,85 @@ namespace HomeBudgetAPI.Services
 
             if (category == null)
             {
-                return new CategoryResponse
+                return new ApiResponse<CategoryResponse>
                 {
                     Success = false,
-                    Message = "Kategorija nije pronađena ili ne pripada korisniku."
+                    Message = "Kategorija nije pronađena ili ne pripada korisniku.",
+                    Data = null
                 };
             }
 
             if (category.IsDefault)
             {
-                return new CategoryResponse
+                return new ApiResponse<CategoryResponse>
                 {
                     Success = false,
-                    Message = "Default kategorije nije moguće uređivati."
+                    Message = "Default kategorije nije moguće uređivati.",
+                    Data = _mapper.Map<CategoryResponse>(category)
                 };
             }
 
-            if (!string.IsNullOrWhiteSpace(request.Name) && !string.Equals(newName, category.Name, StringComparison.Ordinal)){
+            if (!string.IsNullOrWhiteSpace(newName) && !string.Equals(newName, category.Name, StringComparison.Ordinal)){
 
                 var exists = await _context.Categories
                         .AnyAsync(c =>
                             c.UserId == userId &&
                             c.Id != categoryId &&
-                            EF.Functions.Collate(c.Name, "SQL_Latin1_General_CP1_CI_AI") == newName);
+                            EF.Functions.Collate(c.Name, NameCollation) == newName);
 
                 if (exists)
                 {
-                    return new CategoryResponse
+                    return new ApiResponse<CategoryResponse>
                     {
                         Success = false,
-                        Message = "Kategorija s ovim nazivom već postoji."
+                        Message = "Kategorija s ovim nazivom već postoji.",
+                        Data = null
                     };
                 }
 
                 category.Name = newName;
             }
 
-            if (!string.IsNullOrWhiteSpace(request.Description))
+            if (!string.IsNullOrWhiteSpace(newDescription))
                 category.Description = newDescription;
 
             await _context.SaveChangesAsync();
 
-            return new CategoryResponse
+            return new ApiResponse<CategoryResponse>
             {
                 Success = true,
                 Message = "Kategorija uspješno ažurirana.",
-                CategoryId = category.Id
+                Data= _mapper.Map<CategoryResponse>(category)
             };
         }
 
-        public async Task<CategoryResponse> DeleteCategoryAsync(int userId, int categoryId, int? moveToCategoryId)
+        public async Task<ApiResponse<CategoryResponse>> DeleteCategoryAsync(int userId, int categoryId, int? moveToCategoryId)
         {
             var category = await _context.Categories
                 .FirstOrDefaultAsync(c => c.Id == categoryId);
 
             if (category == null)
             {
-                return new CategoryResponse { Success = false, Message = "Kategorija ne postoji." };
+                return new ApiResponse<CategoryResponse> { Success = false, Message = "Kategorija ne postoji.", Data = null };
             }
 
             if (category.IsDefault && category.UserId == null)
             {
-                return new CategoryResponse
+                return new ApiResponse<CategoryResponse>
                 {
                     Success = false,
-                    Message = "Globalne default kategorije nije moguće brisati."
+                    Message = "Globalne default kategorije nije moguće brisati.",
+                    Data = null
                 };
             }
 
             if (category.UserId != userId)
             {
-                return new CategoryResponse
+                return new ApiResponse<CategoryResponse>
                 {
                     Success = false,
-                    Message = "Kategorija ne pripada korisniku."
+                    Message = "Kategorija ne pripada korisniku.",
+                    Data = null
                 };
             }
 
@@ -147,10 +158,11 @@ namespace HomeBudgetAPI.Services
 
                 if (targetCategory == null)
                 {
-                    return new CategoryResponse
+                    return new ApiResponse<CategoryResponse>
                     {
                         Success = false,
-                        Message = "Kategorija za prebacivanje troškova ne postoji."
+                        Message = "Kategorija za prebacivanje troškova ne postoji.",
+                        Data = null
                     };
                 }
             }
@@ -161,10 +173,11 @@ namespace HomeBudgetAPI.Services
 
                 if (targetCategory == null)
                 {
-                    return new CategoryResponse
+                    return new ApiResponse<CategoryResponse>
                     {
                         Success = false,
-                        Message = "Fallback default kategorija nije pronađena."
+                        Message = "Fallback default kategorija nije pronađena.",
+                        Data = null
                     };
                 }
             }
@@ -180,29 +193,41 @@ namespace HomeBudgetAPI.Services
 
             await _context.SaveChangesAsync();
 
-            return new CategoryResponse
+            return new ApiResponse<CategoryResponse>
             {
                 Success = true,
                 Message = $"Kategorija obrisana. {expensesToMove.Count} troškova prebačeno u '{targetCategory.Name}'.",
-                CategoryId = category.Id
+                Data = _mapper.Map<CategoryResponse>(category)
             };
         }
 
-        public async Task<CategoryDTO> GetCategoryByIdAsync(int userId, int categoryId)
+        public async Task<ApiResponse<CategoryResponse>> GetCategoryByIdAsync(int userId, int categoryId)
         {
+
             var category = await _context.Categories
-                .FindAsync(categoryId);
+                            .Where(c => c.Id == categoryId && (c.UserId == userId || c.IsDefault))
+                            .ProjectTo<CategoryResponse>(_mapper.ConfigurationProvider)
+                            .FirstOrDefaultAsync();
 
             if (category == null)
-                return null;
-
-            return new CategoryDTO
             {
-                Id = category.Id,
-                Name = category.Name,
-                Description = category.Description,
-                IsDefault = category.IsDefault
+                return new ApiResponse<CategoryResponse>
+                {
+                    Success = false,
+                    Message = "Kategorija nije pronađena.",
+                    Data = null
+                };
+
+            }
+
+
+            return new ApiResponse<CategoryResponse>
+            {
+                Success = true,
+                Message = "Kategorija uspješno dohvaćena.",
+                Data = category
             };
+
 
         }
 

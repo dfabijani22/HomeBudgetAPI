@@ -1,4 +1,4 @@
-﻿using HomeBudgetAPI.Models;
+﻿using HomeBudgetAPI.DTOs.Category;
 using HomeBudgetAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,6 +12,7 @@ namespace HomeBudgetAPI.Controllers
     public class CategoryController : ControllerBase
     {
         private readonly ICategoryService _categoryService;
+        private int UserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
         public CategoryController(ICategoryService categoryService)
         {
             _categoryService = categoryService;
@@ -20,8 +21,7 @@ namespace HomeBudgetAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> AddCategory([FromBody] CategoryRequest request)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-            var result = await _categoryService.AddCategoryAsync(request, userId);
+            var result = await _categoryService.AddCategoryAsync(request, UserId);
 
             if (!result.Success)
             {
@@ -33,9 +33,7 @@ namespace HomeBudgetAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetUserCategories()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-            var categories = await _categoryService.GetUserCategories(userId);
+            var categories = await _categoryService.GetUserCategories(UserId);
 
             return Ok(categories);
         }
@@ -43,9 +41,7 @@ namespace HomeBudgetAPI.Controllers
         [HttpPatch("{categoryId}")]
         public async Task<IActionResult> UpdateCategory(int categoryId, [FromBody] CategoryRequest request)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-
-            var result = await _categoryService.UpdateCategoryAsync(userId, categoryId, request);
+            var result = await _categoryService.UpdateCategoryAsync(UserId, categoryId, request);
 
             if (!result.Success)
                 return BadRequest(result);
@@ -57,12 +53,15 @@ namespace HomeBudgetAPI.Controllers
         [HttpDelete("{categoryId}")]
         public async Task<IActionResult> DeleteCategory(int categoryId, [FromQuery] int? moveToCategoryId)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-
-            var result = await _categoryService.DeleteCategoryAsync(userId, categoryId, moveToCategoryId);
+            var result = await _categoryService.DeleteCategoryAsync(UserId, categoryId, moveToCategoryId);
 
             if (!result.Success)
+            {
+
+                if (result.Message.Contains("ne pripada", StringComparison.OrdinalIgnoreCase))
+                    return Forbid();
                 return BadRequest(result);
+            }
 
             return Ok(result);
         }
@@ -70,9 +69,10 @@ namespace HomeBudgetAPI.Controllers
         [HttpGet("{categoryId}")]
         public async Task<IActionResult> GetCategoryById(int categoryId)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+            var result = await _categoryService.GetCategoryByIdAsync(UserId, categoryId);
 
-            var result = await _categoryService.GetCategoryByIdAsync(userId, categoryId);
+            if (!result.Success)
+                return NotFound(result);
 
             return Ok(result);
         }

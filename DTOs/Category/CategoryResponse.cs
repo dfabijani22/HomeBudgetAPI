@@ -1,6 +1,6 @@
-﻿namespace HomeBudgetAPI.DTOs
+﻿namespace HomeBudgetAPI.DTOs.Category
 {
-    public class CategoryDTO
+    public class CategoryResponse
     {
         public int Id { get; set; }
         public string Name { get; set; }

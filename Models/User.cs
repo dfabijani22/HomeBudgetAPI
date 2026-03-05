@@ -11,10 +11,13 @@ namespace HomeBudgetAPI.Models
         public string Surname { get; set; }
 
         [Required, EmailAddress]
-        public string Email { get; set; }
+        public string Email { get; set; } = default!;
+
+        [Required]
+        public string NormalizedEmail { get; set; } = default!;
 
         [Required]
         public string PasswordHash { get; set; } = string.Empty;
-        public ICollection<Expense> Expenses { get; set; }
+        public ICollection<Expense> Expenses { get; set; } = new List<Expense>();
     }
 }

@@ -1,6 +1,6 @@
 ﻿using Azure.Core;
 using HomeBudgetAPI.Data;
-using HomeBudgetAPI.Models;
+using HomeBudgetAPI.DTOs.Expense;
 using HomeBudgetAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,17 +14,15 @@ namespace HomeBudgetAPI.Controllers
     public class ExpenseController : ControllerBase
     {
         private readonly IExpenseService _expenseService;
-        private readonly ApplicationDbContext _context;
-        public ExpenseController(IExpenseService expenseService, ApplicationDbContext context) { 
+        private int UserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        public ExpenseController(IExpenseService expenseService) { 
             _expenseService = expenseService;
-            _context = context;
         }
 
         [HttpPost]
         public async Task<IActionResult> AddExpense([FromBody] ExpenseRequest request)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-            var result = await _expenseService.AddExpenseAsync(request, userId);
+            var result = await _expenseService.AddExpenseAsync(request, UserId);
 
             if (!result.Success)
             {
@@ -37,20 +35,15 @@ namespace HomeBudgetAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetUserExpenses([FromQuery] int? month, [FromQuery] int? categoryId)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var result = await _expenseService.GetUserExpenses(UserId, month, categoryId);
 
-            var expenses = await _expenseService.GetUserExpenses(userId, month, categoryId);
-
-            return Ok(expenses);
+            return Ok(result);
         }
 
         [HttpPatch("{expenseId}")]
         public async Task<IActionResult> UpdateExpense(int expenseId, [FromBody]ExpenseRequest request)
         {
-
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-
-            var result = await _expenseService.UpdateExpenseAsync(userId, expenseId, request);
+            var result = await _expenseService.UpdateExpenseAsync(UserId, expenseId, request);
 
             if (!result.Success)
                 return BadRequest(result);
@@ -62,9 +55,7 @@ namespace HomeBudgetAPI.Controllers
         [HttpDelete("{expenseId}")]
         public async Task<IActionResult> DeleteExpense(int expenseId)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-
-            var result = await _expenseService.DeleteExpenseAsync(userId, expenseId);
+            var result = await _expenseService.DeleteExpenseAsync(UserId, expenseId);
 
             if (!result.Success)
                 return BadRequest(result);
@@ -75,9 +66,7 @@ namespace HomeBudgetAPI.Controllers
         [HttpGet("{expenseId}")]
         public async Task<IActionResult> GetExpenseById(int expenseId)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-
-            var result = await _expenseService.GetExpenseByIdAsync(userId, expenseId);
+            var result = await _expenseService.GetExpenseByIdAsync(UserId, expenseId);
 
             return Ok(result);
         }

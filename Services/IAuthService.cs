@@ -1,11 +1,12 @@
-﻿using HomeBudgetAPI.Models;
+﻿using HomeBudgetAPI.DTOs.Auth;
+using HomeBudgetAPI.DTOs.Common;
 
 namespace HomeBudgetAPI.Services
 {
     public interface IAuthService
     {
-        Task<AuthResponse> RegisterUserAsync(RegisterRequest request);
-        Task<LoginResponse> LoginUserAsync(LoginRequest request);
+        Task<ApiResponse<UserDto>> RegisterUserAsync(RegisterRequest request);
+        Task<ApiResponse<LoginResultDto>> LoginUserAsync(LoginRequest request);
 
     }
 }
