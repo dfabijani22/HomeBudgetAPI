@@ -20,27 +20,35 @@ namespace HomeBudgetAPI.Services
             _mapper = mapper;
         }
 
-        public async Task<ApiResponse<int>> AddExpenseAsync(ExpenseRequest request, int userId)
+        public async Task<ApiResponse<ExpenseResponse>> AddExpenseAsync(ExpenseRequest request, int userId)
         {
             if (request.Amount <= 0)
             {
-                return new ApiResponse<int> { Success = false, Message = "Iznos mora biti pozitivan broj."};
+                return new ApiResponse<ExpenseResponse> { Success = false, Message = "Iznos mora biti pozitivan broj."};
             }
 
             var category = await _context.Categories.FindAsync(request.CategoryId);
             if (category == null) 
             {
-                return new ApiResponse<int> { Success = false, Message = "Kategorija nije pronađena." };
+                return new ApiResponse<ExpenseResponse> { Success = false, Message = "Kategorija nije pronađena." };
             }
 
             var expense = _mapper.Map<Expense>(request);
             expense.UserId = userId;
+            try
+            {
+                _context.Expenses.Add(expense);
+                await _context.SaveChangesAsync();
+                var response = _mapper.Map<ExpenseResponse>(expense);
 
-            _context.Expenses.Add(expense);
-            await _context.SaveChangesAsync();
+                return new ApiResponse<ExpenseResponse> { Success = true, Message = "Trošak uspješno dodan.", Data = response };
+            }
 
-            return new ApiResponse<int> { Success = true, Message = "Trošak uspješno dodan.", Data = expense.Id};
-            
+            catch (Exception ex)
+            {
+                return new ApiResponse<ExpenseResponse> { Success = false, Message = "Trošak nije uspješno dodan."};
+            }
+
         }
 
         public async Task<ApiResponse<List<ExpenseResponse>>> GetUserExpenses(int userId, int? month = null, int? categoryId = null)
@@ -71,7 +79,7 @@ namespace HomeBudgetAPI.Services
             };
 
         }
-        public async Task<ApiResponse<int>> UpdateExpenseAsync(int userId, int expenseId, ExpenseRequest request)
+        public async Task<ApiResponse<ExpenseResponse>> UpdateExpenseAsync(int userId, int expenseId, ExpenseRequest request)
         {
 
 
@@ -80,7 +88,7 @@ namespace HomeBudgetAPI.Services
 
             if (expense == null)
             {
-                return new ApiResponse<int>
+                return new ApiResponse<ExpenseResponse>
                 {
                     Success = false,
                     Message = "Trošak nije pronađen ili ne pripada korisniku."
@@ -89,7 +97,7 @@ namespace HomeBudgetAPI.Services
 
             if (request.Amount != default && request.Amount <= 0)
             {
-                return new ApiResponse<int>
+                return new ApiResponse<ExpenseResponse>
                 {
                     Success = false,
                     Message = "Iznos mora biti pozitivan broj."
@@ -102,7 +110,7 @@ namespace HomeBudgetAPI.Services
 
                 if (category == null)
                 {
-                    return new ApiResponse<int>
+                    return new ApiResponse<ExpenseResponse>
                     {
                         Success = false,
                         Message = "Kategorija nije pronađena."
@@ -123,23 +131,23 @@ namespace HomeBudgetAPI.Services
                 expense.CategoryId = request.CategoryId;
 
             await _context.SaveChangesAsync();
-
-            return new ApiResponse<int>
+            var response = _mapper.Map<ExpenseResponse>(expense);
+            return new ApiResponse<ExpenseResponse>
             {
                 Success = true,
                 Message = "Trošak uspješno izmijenjen.",
-                Data = expense.Id
+                Data = response
             };
 
         }
-        public async Task<ApiResponse<int>> DeleteExpenseAsync(int userId, int expenseId)
+        public async Task<ApiResponse<ExpenseResponse>> DeleteExpenseAsync(int userId, int expenseId)
         {
             var expense = await _context.Expenses
                 .FirstOrDefaultAsync(e => e.Id == expenseId && e.UserId == userId);
 
             if (expense == null)
             {
-                return new ApiResponse<int>
+                return new ApiResponse<ExpenseResponse>
                 {
                     Success = false,
                     Message = "Trošak nije pronađen ili ne pripada korisniku."
@@ -149,11 +157,12 @@ namespace HomeBudgetAPI.Services
             _context.Expenses.Remove(expense);
             await _context.SaveChangesAsync();
 
-            return new ApiResponse<int>
+            var response = _mapper.Map<ExpenseResponse>(expense);
+            return new ApiResponse<ExpenseResponse>
             {
                 Success = true,
                 Message = "Trošak je uspješno obrisan.",
-                Data = expense.Id
+                Data = response
             };
         }
 
