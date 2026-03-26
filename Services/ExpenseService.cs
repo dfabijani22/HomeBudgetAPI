@@ -51,7 +51,7 @@ namespace HomeBudgetAPI.Services
 
         }
 
-        public async Task<ApiResponse<List<ExpenseResponse>>> GetUserExpenses(int userId, int? month = null, int? categoryId = null)
+        public async Task<ApiResponse<List<ExpenseResponse>>> GetUserExpenses(int userId, int? month = null, int? year = null, int? categoryId = null)
         {
             var query = _context.Expenses
                 .Include(e => e.Category)
@@ -60,6 +60,10 @@ namespace HomeBudgetAPI.Services
             if (month.HasValue)
             {
                 query = query.Where(e => e.Date.Month == month.Value);
+            }
+            if (year.HasValue)
+            {
+                query = query.Where(e => e.Date.Year == year.Value);
             }
 
             if (categoryId.HasValue && categoryId.Value != 0)
@@ -71,6 +75,7 @@ namespace HomeBudgetAPI.Services
                 .OrderByDescending(e => e.Date)
                 .ProjectTo<ExpenseResponse>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+
             return new ApiResponse<List<ExpenseResponse>>
             {
                 Success = true,

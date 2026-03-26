@@ -1,8 +1,9 @@
-﻿using HomeBudgetAPI.DTOs.Category;
-using HomeBudgetAPI.DTOs.Expense;
-using HomeBudgetAPI.Models;
-using AutoMapper;
+﻿using AutoMapper;
 using HomeBudgetAPI.DTOs.Auth;
+using HomeBudgetAPI.DTOs.Category;
+using HomeBudgetAPI.DTOs.Expense;
+using HomeBudgetAPI.DTOs.MonthlyBudget;
+using HomeBudgetAPI.Models;
 
 namespace HomeBudgetAPI.Mappers
 {
@@ -29,6 +30,10 @@ namespace HomeBudgetAPI.Mappers
                 .ForMember(d => d.Id, o => o.Ignore())
                 .ForMember(d => d.PasswordHash, o => o.Ignore())
                 .ForMember(d => d.NormalizedEmail, o => o.Ignore());
+
+
+            CreateMap<MonthlyBudget, MonthlyBudgetResponse>();
+            CreateMap<MonthlyBudgetRequest, MonthlyBudget>();
 
         }
 

@@ -33,9 +33,9 @@ namespace HomeBudgetAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetUserExpenses([FromQuery] int? month, [FromQuery] int? categoryId)
+        public async Task<IActionResult> GetUserExpenses([FromQuery] int? month, [FromQuery] int? year, [FromQuery] int? categoryId)
         {
-            var result = await _expenseService.GetUserExpenses(UserId, month, categoryId);
+            var result = await _expenseService.GetUserExpenses(UserId, month, year, categoryId);
 
             return Ok(result);
         }
